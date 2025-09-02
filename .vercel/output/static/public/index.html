@@ -1,0 +1,110 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>RVU Jersey Claim</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 2rem; }
+      .card { max-width: 480px; margin: auto; padding: 2rem; border: 1px solid #ddd; border-radius: 16px; }
+      #status { margin-top: 1rem; font-weight: 600; }
+      .ok { color: #0a8; } .err { color: #c00; }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h2>RVU Sports Fest — Jersey Claim</h2>
+      <p>Sign in with your <b>@rvu.edu.in</b> Google account to claim your jersey (one per student).</p>
+
+      <div id="g_id_onload"
+           data-client_id="1085288261095-a7lho8ku03c0q4c0nhrqpo0ct2bnr8su.apps.googleusercontent.com"
+           data-callback="onGoogleSignIn"
+           data-auto_prompt="false">
+      </div>
+      <div class="g_id_signin"
+           data-type="standard"
+           data-size="large"
+           data-theme="outline"
+           data-text="sign_in_with"
+           data-shape="rectangular"
+           data-logo_alignment="left">
+      </div>
+
+      <div id="status"></div>
+    </div>
+
+    <script>
+      // Prevent multiple popup attempts and provide diagnostics for common GSI issues.
+      let _gsiHandling = false;
+
+      window.onGoogleSignIn = async function(response) {
+        const status = document.getElementById("status");
+        if (_gsiHandling) {
+          status.className = "err";
+          status.textContent = "Sign-in already in progress — check for blocked popups.";
+          return;
+        }
+        _gsiHandling = true;
+
+        // GSI returns a credential (ID token)
+        const idToken = response && response.credential;
+        status.className = "";
+        status.textContent = "Verifying…";
+
+        if (!idToken) {
+          status.className = "err";
+          status.textContent = "No ID token received. Check console for GSI errors (origin/client ID mismatch).";
+          _gsiHandling = false;
+          return;
+        }
+
+        try {
+          const res = await fetch("/claim", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": "Bearer " + idToken
+            },
+            body: JSON.stringify({})
+          });
+          const data = await res.json();
+          if (data && data.status) {
+            // Redirect user straight to the claimed page with the status and token (if present)
+            const q = new URLSearchParams();
+            q.set('status', data.status);
+            if (data.token) q.set('token', data.token);
+            window.location.href = `/claimed.html?${q.toString()}`;
+            return;
+          }
+          if (data && data.success) {
+            status.className = "ok";
+            status.textContent = data.message || "Claim approved!";
+            if (data.token) {
+              window.location.href = `/claimed.html?status=success&token=${encodeURIComponent(data.token)}`;
+              return;
+            }
+          } else {
+            status.className = "err";
+            status.textContent = data.message || "Claim failed.";
+          }
+        } catch (e) {
+          console.error('Claim request failed', e);
+          status.className = "err";
+          status.textContent = "Network error. Please try again.";
+        } finally {
+          _gsiHandling = false;
+        }
+      };
+
+      // If the GSI client doesn't initialize, show a helpful hint after a short timeout.
+      setTimeout(() => {
+        const status = document.getElementById("status");
+        if (!window.google || !window.google.accounts || !window.google.accounts.id) {
+          status.className = "err";
+          status.textContent = "Google Sign-In failed to initialize. Check console: ensure your client ID is allowed for http://localhost:8080 in Google Cloud Console (Authorized JavaScript origins).";
+        }
+      }, 1600);
+    </script>
+  </body>
+</html>
