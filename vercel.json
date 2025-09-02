@@ -3,5 +3,11 @@
   "devCommand": "npm start",
   "installCommand": "npm install",
   "framework": null,
-  "outputDirectory": ".vercel/output"
+  "outputDirectory": ".vercel/output",
+  "rewrites": [
+    {
+      "source": "/claim",
+      "destination": "/api/claim"
+    }
+  ]
 }

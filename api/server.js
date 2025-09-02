@@ -40,7 +40,9 @@ app.use(express.static(path.join(__dirname, "../public")));
 const client = new OAuth2Client(
   process.env.CLIENT_ID,
   process.env.CLIENT_SECRET,
-  process.env.REDIRECT_URI
+  process.env.REDIRECT_URI,
+  process.env.NEXT_PUBLIC_API_URL,
+  process.env.FRONTEND_ORIGIN
 );
 
 app.post('/claim', async (req, res) => {

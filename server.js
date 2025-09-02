@@ -124,7 +124,9 @@ const claimLimiter = rateLimit({
 const client = new OAuth2Client(
   process.env.CLIENT_ID,
   process.env.CLIENT_SECRET,
-  process.env.REDIRECT_URI
+  process.env.REDIRECT_URI,
+  process.env.FRONTEND_ORIGIN,
+  process.env.NEXT_PUBLIC_API_URL
 );
 
 app.get("/api/auth/callback", async (req, res) => {
