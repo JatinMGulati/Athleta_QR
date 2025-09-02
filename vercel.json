@@ -6,8 +6,3 @@
     }
   ]
 }
-      "source": "/claim",
-      "destination": "/api/claim"
-    }
-  ]
-}
