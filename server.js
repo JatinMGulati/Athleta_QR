@@ -127,7 +127,7 @@ const client = new OAuth2Client(
   process.env.REDIRECT_URI
 );
 
-app.get("/auth/callback", async (req, res) => {
+app.get("/api/auth/callback", async (req, res) => {
   const code = req.query.code;
 
   if (!code) {
