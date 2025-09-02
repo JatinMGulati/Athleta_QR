@@ -1,0 +1,53 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Admin — Devices</title>
+  <style>body{font-family:system-ui,Arial;margin:1rem}table{width:100%;border-collapse:collapse}th,td{padding:.5rem;border:1px solid #ddd}button{padding:.3rem .6rem}#msg{margin-top:1rem}</style>
+</head>
+<body>
+  <h2>Device mappings</h2>
+  <p>Enter admin secret then Load to view devices.</p>
+  <input id="secret" type="password" placeholder="ADMIN_SECRET" />
+  <button id="load">Load</button>
+  <div id="list"></div>
+  <div id="msg"></div>
+
+  <script>
+    async function load(){
+      const secret = document.getElementById('secret').value.trim();
+      try{
+        const res = await fetch('/admin/devices', { headers: { 'Authorization': secret }});
+        const text = await res.text();
+        let j;
+        try { j = JSON.parse(text); } catch(e){ j = { success:false, message: text }; }
+        if(!res.ok || !j.success){ document.getElementById('msg').textContent = `HTTP ${res.status}: ${JSON.stringify(j)}`; return }
+      const rows = j.devices || [];
+      const t = document.createElement('table');
+      const thead = document.createElement('thead'); thead.innerHTML = '<tr><th>Token</th><th>Email</th><th>Claimed At</th><th>Blocked Until</th><th>Action</th></tr>'; t.appendChild(thead);
+      const tb = document.createElement('tbody');
+      rows.forEach(r=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${r.tokenShort}</td><td>${r.email||''}</td><td>${r.claimed_at||''}</td><td>${r.blocked_until||''}</td><td><button data-token="${r.token}">Unlock</button></td>`;
+        tb.appendChild(tr);
+      });
+      t.appendChild(tb);
+      document.getElementById('list').innerHTML = '';
+      document.getElementById('list').appendChild(t);
+  document.querySelectorAll('button[data-token]').forEach(b=>b.addEventListener('click', async (e)=>{
+        const token = e.target.getAttribute('data-token');
+        try{
+          const r2 = await fetch('/admin/unlock-device', { method:'POST', headers:{ 'Content-Type':'application/json', 'Authorization': secret }, body: JSON.stringify({ token }) });
+          const t2 = await r2.text();
+          let j2;
+          try{ j2 = JSON.parse(t2); } catch(e){ j2 = { success:false, message: t2 }; }
+          document.getElementById('msg').textContent = JSON.stringify(j2);
+          load();
+        }catch(e){ document.getElementById('msg').textContent = String(e); }
+      }));
+  }
+  catch(e){ document.getElementById('msg').textContent = String(e); }
+    document.getElementById('load').addEventListener('click', load);
+  </script>
+</body>
+<!-- removed -->
