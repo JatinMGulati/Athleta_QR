@@ -1,7 +1,15 @@
 import QRCode from 'qrcode';
 
-const url = process.argv[2] || 'https://your-host.example/';
-QRCode.toFile('claim-qr.png', url, { width: 400 }, function (err) {
+const PRODUCTION_URL = 'https://athleta-qr.vercel.app'; // Replace with your stable Vercel URL
+QRCode.toFile('claim-qr.png', PRODUCTION_URL, {
+  color: {
+    dark: '#000',  // QR code color
+    light: '#FFF' // Background color
+  },
+  width: 1000,
+  margin: 2,
+  errorCorrectionLevel: 'H'
+}, function (err) {
   if (err) {
     console.error('QR error', err);
     process.exit(1);
