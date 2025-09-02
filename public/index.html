@@ -18,10 +18,14 @@
       <p>Sign in with your <b>@rvu.edu.in</b> Google account to claim your jersey (one per student).</p>
 
       <div id="g_id_onload"
-           data-client_id="1085288261095-a7lho8ku03c0q4c0nhrqpo0ct2bnr8su.apps.googleusercontent.com"
            data-callback="onGoogleSignIn"
            data-auto_prompt="false">
       </div>
+      <script src="/js/config.js"></script>
+      <script>
+        // Load client ID from server config
+        loadGoogleConfig();
+      </script>
       <div class="g_id_signin"
            data-type="standard"
            data-size="large"
