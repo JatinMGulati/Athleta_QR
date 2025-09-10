@@ -1,0 +1,67 @@
+*** Begin Patch
+*** Update File: server.js
+@@
+ app.post('/claim', claimLimiter, async (req, res) => {
+@@
+   } catch (err) {
+     console.error('Error verifying ID token or processing claim:', err);
+-    return res.status(500).json({ success: false, message: 'Authentication failed' });
++    return res.status(500).json({ success: false, message: 'Authentication failed' });
+   }
+ });
+ 
++// Ensure /claim always returns JSON and accidental redirects are converted to JSON.
++// This middleware is intentionally narrow-scope (only affects paths under /claim).
++app.use('/claim', (req, res, next) => {
++  // Default content type
++  res.type('application/json');
++
++  // Wrap res.redirect for this route so a redirect doesn't send HTML
++  const origRedirect = res.redirect && res.redirect.bind(res);
++  res.redirect = function redirectJson(location) {
++    // Respond with JSON indicating a redirect target (frontend can handle it).
++    // Use 200 to avoid browsers following a Location header/html body.
++    return res.status(200).json({ success: true, redirect: location });
++  };
++
++  // Wrap res.send to ensure it becomes JSON if something tries to send text
++  const origSend = res.send && res.send.bind(res);
++  res.send = function sendJson(body) {
++    try {
++      // If body is already JSON serializable, send as JSON
++      if (typeof body === 'object') {
++        return res.json(body);
++      }
++      // If it's a string that looks like JSON, attempt parse -> send as JSON
++      const trimmed = String(body || '').trim();
++      if ((trimmed.startsWith('{') && trimmed.endsWith('}')) || (trimmed.startsWith('[') && trimmed.endsWith(']'))) {
++        try {
++          const parsed = JSON.parse(trimmed);
++          return res.json(parsed);
++        } catch (e) {
++          // fallthrough to send as message
++        }
++      }
++      // Fallback: wrap text in a JSON object
++      return res.json({ success: false, message: String(body) });
++    } catch (e) {
++      // If anything goes wrong, fall back to original send
++      return origSend ? origSend(body) : res.json({ success: false, message: String(body) });
++    }
++  };
++
++  next();
++});
++
++// Generic error handler that ensures /claim returns JSON on uncaught errors.
++app.use((err, req, res, next) => {
++  if (!err) return next();
++  console.error('Unhandled error (global handler):', err);
++  if (req.path && req.path.startsWith('/claim')) {
++    return res.status(500).json({ success: false, message: 'Internal server error' });
++  }
++  // let other handlers manage non-/claim paths
++  next(err);
++});
++
+*** End Patch
